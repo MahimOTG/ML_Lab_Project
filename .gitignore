@@ -1,0 +1,6 @@
+logs/
+.venv/
+__pycache__/
+*.py[cod]
+artifacts/*_train.csv
+artifacts/*_test.csv

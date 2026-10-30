@@ -1,0 +1,28 @@
+column,type,meaning
+engine_id,integer,Group identifier within subset and split. Exclude from model predictors.
+cycle,integer,"Observed engine operating cycle, starting at 1. Potential predictor."
+operating_setting_1,numeric,Original operating-setting value. Potential predictor.
+operating_setting_2,numeric,Original operating-setting value. Potential predictor.
+operating_setting_3,numeric,Original operating-setting value. Potential predictor.
+sensor_01,numeric,Original sensor measurement 1. Generic source-order name. Potential predictor.
+sensor_02,numeric,Original sensor measurement 2. Generic source-order name. Potential predictor.
+sensor_03,numeric,Original sensor measurement 3. Generic source-order name. Potential predictor.
+sensor_04,numeric,Original sensor measurement 4. Generic source-order name. Potential predictor.
+sensor_05,numeric,Original sensor measurement 5. Generic source-order name. Potential predictor.
+sensor_06,numeric,Original sensor measurement 6. Generic source-order name. Potential predictor.
+sensor_07,numeric,Original sensor measurement 7. Generic source-order name. Potential predictor.
+sensor_08,numeric,Original sensor measurement 8. Generic source-order name. Potential predictor.
+sensor_09,numeric,Original sensor measurement 9. Generic source-order name. Potential predictor.
+sensor_10,numeric,Original sensor measurement 10. Generic source-order name. Potential predictor.
+sensor_11,numeric,Original sensor measurement 11. Generic source-order name. Potential predictor.
+sensor_12,numeric,Original sensor measurement 12. Generic source-order name. Potential predictor.
+sensor_13,numeric,Original sensor measurement 13. Generic source-order name. Potential predictor.
+sensor_14,numeric,Original sensor measurement 14. Generic source-order name. Potential predictor.
+sensor_15,numeric,Original sensor measurement 15. Generic source-order name. Potential predictor.
+sensor_16,numeric,Original sensor measurement 16. Generic source-order name. Potential predictor.
+sensor_17,numeric,Original sensor measurement 17. Generic source-order name. Potential predictor.
+sensor_18,numeric,Original sensor measurement 18. Generic source-order name. Potential predictor.
+sensor_19,numeric,Original sensor measurement 19. Generic source-order name. Potential predictor.
+sensor_20,numeric,Original sensor measurement 20. Generic source-order name. Potential predictor.
+sensor_21,numeric,Original sensor measurement 21. Generic source-order name. Potential predictor.
+RUL,integer,Target: remaining cycles until failure. Training max cycle minus current cycle; test endpoint truth comes from original RUL file.

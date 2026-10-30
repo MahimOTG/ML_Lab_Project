@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block title %}AeroLife | Aircraft Engine Health Prediction{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">NASA C-MAPSS</span>
+    <h1>Aircraft Engine Health Prediction</h1>
+    <p class="hero-sub">Predict the Remaining Useful Life (RUL) of aircraft engines using machine learning.</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="feature-icon"><svg class="icon"><use href="#icon-database"></use></svg></span>
+        <div><strong>4 Datasets</strong><span>FD001 – FD004</span></div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon"><svg class="icon"><use href="#icon-activity"></use></svg></span>
+        <div><strong>Sensor Data</strong><span>21 sensor readings</span></div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon"><svg class="icon"><use href="#icon-bar"></use></svg></span>
+        <div><strong>Multiple Models</strong><span>ML model comparison</span></div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon"><svg class="icon"><use href="#icon-shield"></use></svg></span>
+        <div><strong>Reliable Prediction</strong><span>Support maintenance planning</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <div class="turbine"></div>
+  </div>
+</section>
+
+{% if not dataset %}
+<section class="card setup-card">
+  <span class="card-icon"><svg class="icon"><use href="#icon-alert"></use></svg></span>
+  <div>
+    <h2>No trained model found</h2>
+    <p>Train at least one dataset before using the dashboard.</p>
+    <pre>python -m src.pipeline.train_pipeline --dataset FD001</pre>
+  </div>
+</section>
+{% else %}
+
+<div class="content-grid">
+  <section class="card input-card" id="input-engine">
+    <div class="card-head">
+      <span class="card-icon"><svg class="icon"><use href="#icon-database"></use></svg></span>
+      <div>
+        <h2>Input Engine Data</h2>
+        <p>Select a dataset and provide engine sensor values or upload a CSV file.</p>
+      </div>
+    </div>
+
+    {% if error %}
+    <div class="alert error">
+      <svg class="icon"><use href="#icon-alert"></use></svg>
+      <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <form action="{{ url_for('predict_datapoint') }}" method="post" enctype="multipart/form-data" class="prediction-form">
+      <label class="field-label" for="dataset">Select Dataset</label>
+      <select id="dataset" name="dataset" class="input">
+        {% for option in datasets %}
+        <option value="{{ option.name }}" {% if option.name == dataset %}selected{% endif %} {% if not option.trained %}disabled{% endif %}>
+          {{ option.name }}{% if not option.trained %} (not trained){% endif %}
+        </option>
+        {% endfor %}
+      </select>
+
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab-button {% if tab != 'upload' %}active{% endif %}" data-tab="manual">
+          <svg class="icon"><use href="#icon-file"></use></svg> Manual Input
+        </button>
+        <button type="button" class="tab-button {% if tab == 'upload' %}active{% endif %}" data-tab="upload">
+          <svg class="icon"><use href="#icon-upload"></use></svg> Upload CSV
+        </button>
+      </div>
+
+      <div class="tab-panel {% if tab == 'upload' %}hidden{% endif %}" id="manual-panel">
+        <h3>Engine Information</h3>
+        <div class="form-grid cols-2">
+          <label>Engine ID
+            <input class="input" type="number" min="1" step="1" name="engine_id" value="{{ engine_id }}">
+          </label>
+          <label>Cycle
+            <input class="input" type="number" min="1" step="any" name="cycle" value="{{ values.get('cycle', '') }}" required>
+          </label>
+        </div>
+
+        {% if settings %}
+        <h3 class="section-title">Operating Settings</h3>
+        <div class="form-grid cols-3">
+          {% for feature in settings %}
+          <label>{{ feature.replace('_', ' ')|title }}
+            <input class="input" type="number" step="any" name="{{ feature }}" value="{{ values.get(feature, defaults.get(feature, '')) }}" required>
+          </label>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="section-row">
+          <h3>Sensor Readings (Example)</h3>
+          <span class="muted">Total: {{ sensors|length }} sensors (S1 – S{{ sensors|length }})</span>
+        </div>
+
+        <div class="form-grid cols-3 sensors-grid">
+          {% for feature in sensors %}
+          {% set sensor_number = feature.split('_')[1]|int %}
+          <label class="{% if loop.index > 6 %}sensor-extra hidden{% endif %}">Sensor {{ sensor_number }} (S{{ sensor_number }})
+            <input class="input" type="number" step="any" name="{{ feature }}" value="{{ values.get(feature, defaults.get(feature, '')) }}" required>
+          </label>
+          {% endfor %}
+        </div>
+
+        {% if sensors|length > 6 %}
+        <button type="button" class="sensor-toggle" id="sensor-toggle" data-expanded="false" data-total="{{ sensors|length }}">
+          <svg class="icon plus"><use href="#icon-plus"></use></svg>
+          <span>Show All {{ sensors|length }} Sensors</span>
+          <svg class="icon chevron"><use href="#icon-chevron"></use></svg>
+        </button>
+        {% endif %}
+
+        <button type="submit" name="mode" value="manual" class="btn btn-primary btn-block">
+          <svg class="icon"><use href="#icon-send"></use></svg> Predict Remaining Useful Life
+        </button>
+      </div>
+
+      <div class="tab-panel {% if tab != 'upload' %}hidden{% endif %}" id="upload-panel">
+        <div class="upload-drop">
+          <span class="upload-icon"><svg class="icon"><use href="#icon-upload"></use></svg></span>
+          <p>Upload a CSV file with engine sensor readings</p>
+          <span class="upload-hint">Required columns: {{ features|join(', ') }}</span>
+          <input type="file" name="csv_file" accept=".csv">
+        </div>
+        <button type="submit" name="mode" value="upload" class="btn btn-primary btn-block">
+          <svg class="icon"><use href="#icon-upload"></use></svg> Predict from CSV
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <div class="right-stack">
+    <section class="card">
+      <div class="card-head">
+        <span class="card-icon"><svg class="icon"><use href="#icon-activity"></use></svg></span>
+        <div>
+          <h2>Prediction Result</h2>
+          {% if upload_results %}<p>{{ upload_count }} prediction{{ '' if upload_count == 1 else 's' }} generated from CSV.</p>{% endif %}
+        </div>
+      </div>
+
+      {% if result %}
+      <div class="result-grid">
+        <div class="result-tile predicted">
+          <span class="result-label"><svg class="icon"><use href="#icon-gauge"></use></svg> Predicted RUL</span>
+          <strong>{{ '%.1f'|format(result['Predicted RUL']) }}</strong>
+          <span class="unit">cycles</span>
+        </div>
+        <div class="result-tile lower">
+          <span class="result-label"><svg class="icon"><use href="#icon-shield"></use></svg> Lower Bound (90%)</span>
+          <strong>{{ '%.1f'|format(result['Lower RUL']) }}</strong>
+          <span class="unit">cycles</span>
+        </div>
+        <div class="result-tile upper">
+          <span class="result-label"><svg class="icon"><use href="#icon-shield"></use></svg> Upper Bound (90%)</span>
+          <strong>{{ '%.1f'|format(result['Upper RUL']) }}</strong>
+          <span class="unit">cycles</span>
+        </div>
+      </div>
+      <div class="info-note">
+        <svg class="icon"><use href="#icon-info"></use></svg>
+        <span>The prediction interval is based on historical model errors and provides an approximate 90% coverage.</span>
+      </div>
+
+      {% elif upload_results %}
+      <div class="table-wrap upload-table">
+        <table class="data-table">
+          <thead>
+            <tr><th>Engine ID</th><th>Cycle</th><th>Predicted RUL</th><th>Lower Bound</th><th>Upper Bound</th></tr>
+          </thead>
+          <tbody>
+            {% for row in upload_results %}
+            <tr>
+              <td>{{ row.get('engine_id', '—') }}</td>
+              <td>{{ row.get('cycle', '—') }}</td>
+              <td class="value-blue">{{ '%.2f'|format(row['Predicted RUL']) }}</td>
+              <td class="value-green">{{ '%.2f'|format(row['Lower RUL']) }}</td>
+              <td class="value-red">{{ '%.2f'|format(row['Upper RUL']) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if upload_count > 20 %}
+      <p class="muted small">Showing the first 20 of {{ upload_count }} rows.</p>
+      {% endif %}
+
+      {% else %}
+      <div class="result-grid">
+        <div class="result-tile predicted placeholder">
+          <span class="result-label"><svg class="icon"><use href="#icon-gauge"></use></svg> Predicted RUL</span>
+          <strong>—</strong>
+          <span class="unit">cycles</span>
+        </div>
+        <div class="result-tile lower placeholder">
+          <span class="result-label"><svg class="icon"><use href="#icon-shield"></use></svg> Lower Bound (90%)</span>
+          <strong>—</strong>
+          <span class="unit">cycles</span>
+        </div>
+        <div class="result-tile upper placeholder">
+          <span class="result-label"><svg class="icon"><use href="#icon-shield"></use></svg> Upper Bound (90%)</span>
+          <strong>—</strong>
+          <span class="unit">cycles</span>
+        </div>
+      </div>
+      <div class="info-note">
+        <svg class="icon"><use href="#icon-info"></use></svg>
+        <span>The prediction interval is based on historical model errors and provides an approximate 90% coverage.</span>
+      </div>
+      <p class="muted small center">Run a prediction to populate these values.</p>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <span class="card-icon"><svg class="icon"><use href="#icon-bar"></use></svg></span>
+        <div>
+          <h2>RUL Trend for Selected Engine</h2>
+          {% if trend %}<p class="muted small">Engine {{ trend.engine_id }} · {{ dataset }}</p>{% endif %}
+        </div>
+      </div>
+
+      {% if trend %}
+      <div class="chart-legend">
+        <span class="legend-item"><span class="dot blue"></span> Predicted RUL</span>
+        <span class="legend-item"><span class="dot red"></span> Actual RUL (if available)</span>
+      </div>
+      <div class="chart-wrap"><canvas id="rulTrendChart"></canvas></div>
+      {% else %}
+      <div class="empty-state">
+        <svg class="icon"><use href="#icon-bar"></use></svg>
+        <p>No trend available for that engine ID in {{ dataset }}.</p>
+      </div>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <span class="card-icon"><svg class="icon"><use href="#icon-file"></use></svg></span>
+        <div><h2>Recent Predictions</h2></div>
+      </div>
+
+      {% if recent_predictions %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Engine ID</th><th>Cycle</th><th>Predicted RUL</th><th>Lower Bound</th><th>Upper Bound</th></tr>
+          </thead>
+          <tbody>
+            {% for row in recent_predictions %}
+            <tr>
+              <td>{{ row['engine_id'] }}</td>
+              <td>{{ row['cycle'] }}</td>
+              <td class="value-blue">{{ '%.1f'|format(row['predicted']) }}</td>
+              <td>{{ '%.1f'|format(row['lower']) }}</td>
+              <td>{{ '%.1f'|format(row['upper']) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <svg class="icon"><use href="#icon-clock"></use></svg>
+        <p>No predictions yet. Results will appear here after your first prediction.</p>
+      </div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chart.umd.min.js') }}"></script>
+<script>
+  {% if trend %}window.trendData = {{ trend|tojson }};{% else %}window.trendData = null;{% endif %}
+</script>
+<script>
+  (function () {
+    if (!window.trendData || typeof Chart === 'undefined') {
+      return;
+    }
+    var canvas = document.getElementById('rulTrendChart');
+    if (!canvas) {
+      return;
+    }
+    var trend = window.trendData;
+    var datasets = [{
+      label: 'Predicted RUL',
+      data: trend.predicted,
+      borderColor: '#2563eb',
+      backgroundColor: 'rgba(37, 99, 235, 0.08)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 0,
+      borderWidth: 2
+    }];
+    if (trend.actual && trend.actual.length) {
+      datasets.push({
+        label: 'Actual RUL',
+        data: trend.actual,
+        borderColor: '#dc2626',
+        borderDash: [6, 4],
+        fill: false,
+        tension: 0.3,
+        pointRadius: 0,
+        borderWidth: 2
+      });
+    }
+    new Chart(canvas, {
+      type: 'line',
+      data: { labels: trend.cycles, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: { backgroundColor: '#0f172a', padding: 10, cornerRadius: 8 }
+        },
+        scales: {
+          x: {
+            title: { display: true, text: 'Cycle', color: '#64748b', font: { size: 11 } },
+            grid: { color: '#e2e8f0' },
+            ticks: { color: '#64748b', maxTicksLimit: 8 }
+          },
+          y: {
+            title: { display: true, text: 'RUL (cycles)', color: '#64748b', font: { size: 11 } },
+            beginAtZero: true,
+            grid: { color: '#e2e8f0' },
+            ticks: { color: '#64748b' }
+          }
+        }
+      }
+    });
+  })();
+</script>
+{% endblock %}

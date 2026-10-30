@@ -1,0 +1,5 @@
+subset,train_rows,train_engines,test_rows,test_engines,train_columns_including_target,missing_numeric_values,duplicate_engine_cycle_keys,constant_training_columns,exact_csv_roundtrip
+FD001,20631,100,13096,100,27,0,0,operating_setting_3; sensor_01; sensor_05; sensor_10; sensor_16; sensor_18; sensor_19,PASS
+FD002,53759,260,33991,259,27,0,0,,PASS
+FD003,24720,100,16596,100,27,0,0,operating_setting_3; sensor_01; sensor_05; sensor_16; sensor_18; sensor_19,PASS
+FD004,61249,249,41214,248,27,0,0,,PASS

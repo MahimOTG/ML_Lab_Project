@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}AeroLife | About Project{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <span class="eyebrow">About Project</span>
+  <h1>Predictive Maintenance with NASA C-MAPSS</h1>
+  <p>AeroLife estimates the Remaining Useful Life (RUL) of turbofan engines from operating settings and sensor readings.</p>
+</section>
+
+<div class="about-grid">
+  <section class="card">
+    <div class="card-head">
+      <span class="card-icon"><svg class="icon"><use href="#icon-info"></use></svg></span>
+      <div><h2>Project Overview</h2></div>
+    </div>
+    <p>
+      The project uses the NASA Commercial Modular Aero-Propulsion System Simulation (C-MAPSS)
+      dataset. Each record describes one engine at one cycle, with three operating settings and
+      21 sensor measurements. A regression model maps those inputs to the engine's remaining
+      useful life in cycles.
+    </p>
+    <ul class="check-list">
+      <li><svg class="icon"><use href="#icon-check"></use></svg> Four subsets covering different operating conditions and fault modes</li>
+      <li><svg class="icon"><use href="#icon-check"></use></svg> Engine-wise validation to avoid leaking the same engine across splits</li>
+      <li><svg class="icon"><use href="#icon-check"></use></svg> Comparison of linear, tree-based, boosting and kernel models</li>
+      <li><svg class="icon"><use href="#icon-check"></use></svg> Paired t-tests with Holm correction for model significance</li>
+      <li><svg class="icon"><use href="#icon-check"></use></svg> Prediction intervals from historical validation errors</li>
+    </ul>
+  </section>
+
+  <section class="card about-visual">
+    <div class="card-head">
+      <span class="card-icon"><svg class="icon"><use href="#icon-cpu"></use></svg></span>
+      <div><h2>Engine Architecture</h2></div>
+    </div>
+    <img src="{{ url_for('static', filename='img/engine_architecture.png') }}" alt="Aircraft turbofan engine architecture diagram">
+    <p class="muted small">Turbofan flow path and sensor context for the C-MAPSS simulation.</p>
+  </section>
+</div>
+
+<section class="card">
+  <div class="card-head">
+    <span class="card-icon"><svg class="icon"><use href="#icon-database"></use></svg></span>
+    <div><h2>Dataset Summary</h2></div>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Dataset</th><th>Engines</th><th>Training Rows</th><th>Max Cycles</th></tr>
+      </thead>
+      <tbody>
+        {% for row in info %}
+        <tr>
+          <td>{{ row.name }}</td>
+          <td>{{ row.engines }}</td>
+          <td>{{ row.rows }}</td>
+          <td>{{ row.max_cycle }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="about-grid">
+  <section class="card">
+    <div class="card-head">
+      <span class="card-icon"><svg class="icon"><use href="#icon-layers"></use></svg></span>
+      <div><h2>ML Pipeline</h2></div>
+    </div>
+    <ol class="pipeline-list">
+      <li><span class="step">1</span><div><strong>Data ingestion</strong><span>Load and validate the train and labeled test CSVs.</span></div></li>
+      <li><span class="step">2</span><div><strong>Transformation</strong><span>Select numeric predictors and remove constant columns.</span></div></li>
+      <li><span class="step">3</span><div><strong>Model comparison</strong><span>Train candidate regressors and score them on held-out engines.</span></div></li>
+      <li><span class="step">4</span><div><strong>Selection</strong><span>Pick the lowest validation RMSE and refit on all training rows.</span></div></li>
+      <li><span class="step">5</span><div><strong>Serving</strong><span>Save the pipeline and serve predictions through this dashboard.</span></div></li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <span class="card-icon"><svg class="icon"><use href="#icon-bar"></use></svg></span>
+      <div><h2>Models Compared</h2></div>
+    </div>
+    <div class="chip-grid">
+      <span>Linear Regression</span>
+      <span>Ridge</span>
+      <span>Decision Tree</span>
+      <span>Random Forest</span>
+      <span>Gradient Boosting</span>
+      <span>Support Vector Regression</span>
+      <span>XGBoost (optional)</span>
+    </div>
+    <h3>Evaluation</h3>
+    <p>
+      Models are scored with MAE, RMSE and R² on an engine-wise validation split.
+      The selected model is also checked with grouped cross-validation, a near-failure
+      MAE slice and paired t-tests against every alternative.
+    </p>
+  </section>
+</div>
+
+<section class="card disclaimer">
+  <div class="card-head">
+    <span class="card-icon"><svg class="icon"><use href="#icon-alert"></use></svg></span>
+    <div><h2>Important Note</h2></div>
+  </div>
+  <p>
+    These results come from simulated C-MAPSS engines. They are useful for comparing models and
+    demonstrating a predictive-maintenance workflow, but they are not certified maintenance advice
+    for real aircraft.
+  </p>
+</section>
+{% endblock %}

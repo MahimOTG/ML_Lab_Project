@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}AeroLife | Model Performance{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <span class="eyebrow">Model Performance</span>
+  <h1>Validation, Cross-Validation &amp; Test Metrics</h1>
+  <p>Engine-wise validation results for every trained C-MAPSS subset, including paired t-tests against the selected model.</p>
+</section>
+
+{% if not entries %}
+<section class="card setup-card">
+  <span class="card-icon"><svg class="icon"><use href="#icon-alert"></use></svg></span>
+  <div>
+    <h2>No trained models found</h2>
+    <p>Train a dataset first, then return to this page.</p>
+    <pre>python -m src.pipeline.train_pipeline --dataset FD001</pre>
+  </div>
+</section>
+{% else %}
+
+{% for entry in entries %}
+<section class="card performance-card">
+  <div class="card-head performance-head">
+    <span class="card-icon"><svg class="icon"><use href="#icon-database"></use></svg></span>
+    <div>
+      <h2>{{ entry.dataset }}</h2>
+      <p>Model comparison and held-out test performance.</p>
+    </div>
+    {% if entry.summary %}
+    <span class="badge">Best: {{ entry.summary['best_model'] }}</span>
+    {% endif %}
+  </div>
+
+  {% if entry.summary %}
+  <div class="metric-grid">
+    <div class="metric">
+      <span>Validation RMSE</span>
+      <strong>{{ '%.3f'|format(entry.summary['validation_rmse']) }}</strong>
+    </div>
+    <div class="metric">
+      <span>CV RMSE</span>
+      <strong>{{ '%.3f'|format(entry.summary['cv_rmse']) }}</strong>
+    </div>
+    <div class="metric">
+      <span>Test MAE</span>
+      <strong>{{ '%.3f'|format(entry.summary['test_mae']) }}</strong>
+    </div>
+    <div class="metric">
+      <span>Test RMSE</span>
+      <strong>{{ '%.3f'|format(entry.summary['test_rmse']) }}</strong>
+    </div>
+    <div class="metric">
+      <span>Test R²</span>
+      <strong>{{ '%.3f'|format(entry.summary['test_r2']) }}</strong>
+    </div>
+    <div class="metric">
+      <span>Near-failure MAE</span>
+      <strong>{% if entry.summary['near_failure_mae'] is not none %}{{ '%.3f'|format(entry.summary['near_failure_mae']) }}{% else %}—{% endif %}</strong>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if entry.comparison %}
+  <h3 class="table-title">Model Comparison</h3>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Model</th><th>MAE</th><th>RMSE</th><th>R²</th></tr>
+      </thead>
+      <tbody>
+        {% for row in entry.comparison %}
+        <tr class="{% if loop.first %}best-row{% endif %}">
+          <td>{{ row['Model'] }}{% if loop.first %} <span class="best-tag">Best</span>{% endif %}</td>
+          <td>{{ '%.3f'|format(row['MAE']) }}</td>
+          <td>{{ '%.3f'|format(row['RMSE']) }}</td>
+          <td>{{ '%.3f'|format(row['R2']) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if entry.significance %}
+  <details class="significance-box">
+    <summary>Paired t-tests vs {{ entry.summary['best_model'] if entry.summary else 'best model' }}</summary>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th>Compared With</th><th>t-statistic</th><th>p-value</th><th>Adjusted p</th><th>Significant (0.05)</th></tr>
+        </thead>
+        <tbody>
+          {% for row in entry.significance %}
+          <tr>
+            <td>{{ row['Compared With'] }}</td>
+            <td>{{ '%.3f'|format(row['t-statistic']) }}</td>
+            <td>{{ '%.4f'|format(row['p-value']) }}</td>
+            <td>{{ '%.4f'|format(row['Adjusted p']) }}</td>
+            <td>
+              {% if row['Significant (0.05)'] %}
+              <span class="status yes">Yes</span>
+              {% else %}
+              <span class="status no">No</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+  {% endif %}
+</section>
+{% endfor %}
+{% endif %}
+{% endblock %}
